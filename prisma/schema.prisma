@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum AccountStage {
+  EVALUATION
+  FUNDED
+}
+
+enum AccountStatus {
+  ACTIVE
+  FAILED
+  CLOSED
+}
+
+enum TransactionType {
+  EXPENSE
+  PAYOUT
+}
+
+enum ExpenseCategory {
+  EVALUATION
+  RESET
+  ACTIVATION
+  SUBSCRIPTION
+  OTHER
+}
+
+model Account {
+  id           String        @id @default(cuid())
+  firm         String
+  size         Float
+  label        String?
+  stage        AccountStage  @default(EVALUATION)
+  status       AccountStatus @default(ACTIVE)
+  purchasedAt  DateTime      @default(now())
+  fundedAt     DateTime?
+  failedAt     DateTime?
+  notes        String?
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Transaction {
+  id        String           @id @default(cuid())
+  account   Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+  type      TransactionType
+  category  ExpenseCategory?
+  amount    Float
+  date      DateTime         @default(now())
+  note      String?
+  createdAt DateTime         @default(now())
+}
