@@ -31,6 +31,7 @@ const base: SimParams = {
   traderSplitPct: 100,
   parallelAccounts: 10,
   fundedLockProfit: 0,
+  maxPayouts: 0,
 };
 
 describe("profit factor <-> payoff", () => {
@@ -202,5 +203,28 @@ describe("runSimulation", () => {
     // 0.7^5 = 16.8% de pasar la prueba
     expect(s.passedPct).toBeGreaterThan(12);
     expect(s.passedPct).toBeLessThan(22);
+  });
+});
+
+describe("maxPayouts", () => {
+  it("limita los cobros por cuenta fondeada", () => {
+    const p: SimParams = {
+      ...base,
+      winRate: 0.95,
+      payoff: 1,
+      risk: 500,
+      drawdownType: "static",
+      drawdownSize: 20000,
+      profitTarget: 1000,
+      fundedTrades: 200,
+      payoutAmount: 500,
+      payoutThreshold: 500,
+      runs: 200,
+      trades: 200,
+    };
+    const unlimited = runSimulation({ ...p, maxPayouts: 0 });
+    const capped = runSimulation({ ...p, maxPayouts: 4 });
+    expect(Math.max(...unlimited.map((r) => r.payoutCount))).toBeGreaterThan(4);
+    expect(Math.max(...capped.map((r) => r.payoutCount))).toBe(4);
   });
 });

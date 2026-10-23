@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/SubmitButton";
 import { createAccount } from "@/lib/actions";
 
 export function AccountForm() {
@@ -51,12 +52,11 @@ export function AccountForm() {
         />
       </label>
       <div className="flex items-end">
-        <button
-          type="submit"
+        <SubmitButton
           className="w-full rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:opacity-90"
         >
           Crear cuenta
-        </button>
+        </SubmitButton>
       </div>
     </form>
   );

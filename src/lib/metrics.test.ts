@@ -138,6 +138,17 @@ describe("computeDashboardMetrics", () => {
 
     expect(m.activeAccountsNow).toBe(1);
   });
+
+  it("does not count accounts promoted to live as active evaluations", () => {
+    const accounts = [
+      account({ id: "a1", stage: "EVALUATION", status: "ACTIVE" }),
+      account({ id: "a2", stage: "FUNDED", status: "ACTIVE" }),
+    ];
+
+    const m = computeDashboardMetrics(accounts, []);
+
+    expect(m.activeAccountsNow).toBe(1);
+  });
 });
 
 describe("computeFirmBreakdown", () => {

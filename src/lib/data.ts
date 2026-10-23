@@ -6,6 +6,8 @@ export async function loadAllAccounts(): Promise<MetricAccount[]> {
   return accounts.map((a) => ({
     id: a.id,
     firm: a.firm,
+    label: a.label,
+    evaluationLabel: a.evaluationLabel,
     size: a.size,
     stage: a.stage,
     status: a.status,

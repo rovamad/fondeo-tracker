@@ -39,15 +39,15 @@ export function resolveRange(searchParams: {
 
   switch (preset) {
     case "mes": {
-      const from = new Date(now.getFullYear(), now.getMonth(), 1);
+      const from = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
       return { preset, range: { from } };
     }
     case "3m": {
-      const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const from = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 2, 1));
       return { preset, range: { from } };
     }
     case "anio": {
-      const from = new Date(now.getFullYear(), 0, 1);
+      const from = new Date(Date.UTC(now.getFullYear(), 0, 1));
       return { preset, range: { from } };
     }
     case "todo":
@@ -58,6 +58,6 @@ export function resolveRange(searchParams: {
 
 function endOfDay(date: Date): Date {
   const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
+  d.setUTCHours(23, 59, 59, 999);
   return d;
 }

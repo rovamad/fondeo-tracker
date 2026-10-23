@@ -44,6 +44,8 @@ export interface SimParams {
    * El suelo queda fijo en inicial + este valor − drawdown. 0 = misma regla que la prueba.
    */
   fundedLockProfit: number;
+  /** máximo de cobros por cuenta fondeada; 0 = sin límite */
+  maxPayouts: number;
 }
 
 export interface RunResult {
@@ -300,6 +302,8 @@ function simulatePhase(
       }
       dayPnl = 0;
       dayTrades = 0;
+      // con el límite de cobros alcanzado la cuenta ya no rinde más: se cierra
+      if (cfg.payout && p.maxPayouts > 0 && payouts >= p.maxPayouts) break;
     }
   }
 

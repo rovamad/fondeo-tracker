@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   CartesianGrid,
   Line,
@@ -12,7 +12,9 @@ import {
   YAxis,
 } from "recharts";
 import { KpiCard } from "@/components/KpiCard";
+import { ReportBacktest } from "@/components/ReportBacktest";
 import { formatCurrency, formatPct } from "@/lib/format";
+import { useStoredState } from "@/lib/useStoredState";
 import {
   payoffToProfitFactor,
   profitFactorToPayoff,
@@ -121,27 +123,28 @@ function resolvePayoff(
 }
 
 export function Simulator({ trackerRatio }: SimulatorProps) {
-  const [runs, setRuns] = useState(2000);
-  const [trades, setTrades] = useState(100);
-  const [winRatePct, setWinRatePct] = useState(70);
-  const [edgeMode, setEdgeMode] = useState<EdgeMode>("payoff");
-  const [profitFactor, setProfitFactor] = useState(1.5);
-  const [winAmount, setWinAmount] = useState(600);
-  const [startEquity, setStartEquity] = useState(50000);
-  const [lossAmount, setLossAmount] = useState(2000);
-  const [drawdownType, setDrawdownType] = useState<DrawdownType>("intraday");
-  const [drawdownSize, setDrawdownSize] = useState(2000);
-  const [lockAtStart, setLockAtStart] = useState(true);
-  const [profitTarget, setProfitTarget] = useState(3000);
-  const [evalCost, setEvalCost] = useState(100);
-  const [activationCost, setActivationCost] = useState(0);
-  const [fundedTrades, setFundedTrades] = useState(100);
-  const [payoutAmount, setPayoutAmount] = useState(1500);
-  const [payoutThreshold, setPayoutThreshold] = useState(1500);
-  const [traderSplitPct, setTraderSplitPct] = useState(100);
-  const [parallelAccounts, setParallelAccounts] = useState(10);
-  const [fundedLockProfit, setFundedLockProfit] = useState(0);
-  const [seed, setSeed] = useState(1);
+  const [runs, setRuns] = useStoredState("sim.runs", 2000);
+  const [trades, setTrades] = useStoredState("sim.trades", 100);
+  const [winRatePct, setWinRatePct] = useStoredState("sim.winRatePct", 70);
+  const [edgeMode, setEdgeMode] = useStoredState<EdgeMode>("sim.edgeMode", "payoff");
+  const [profitFactor, setProfitFactor] = useStoredState("sim.profitFactor", 1.5);
+  const [winAmount, setWinAmount] = useStoredState("sim.winAmount", 600);
+  const [startEquity, setStartEquity] = useStoredState("sim.startEquity", 50000);
+  const [lossAmount, setLossAmount] = useStoredState("sim.lossAmount", 2000);
+  const [drawdownType, setDrawdownType] = useStoredState<DrawdownType>("sim.drawdownType", "intraday");
+  const [drawdownSize, setDrawdownSize] = useStoredState("sim.drawdownSize", 2000);
+  const [lockAtStart, setLockAtStart] = useStoredState("sim.lockAtStart", true);
+  const [profitTarget, setProfitTarget] = useStoredState("sim.profitTarget", 3000);
+  const [evalCost, setEvalCost] = useStoredState("sim.evalCost", 100);
+  const [activationCost, setActivationCost] = useStoredState("sim.activationCost", 0);
+  const [fundedTrades, setFundedTrades] = useStoredState("sim.fundedTrades", 100);
+  const [payoutAmount, setPayoutAmount] = useStoredState("sim.payoutAmount", 1500);
+  const [payoutThreshold, setPayoutThreshold] = useStoredState("sim.payoutThreshold", 1500);
+  const [traderSplitPct, setTraderSplitPct] = useStoredState("sim.traderSplitPct", 100);
+  const [parallelAccounts, setParallelAccounts] = useStoredState("sim.parallelAccounts", 10);
+  const [maxPayouts, setMaxPayouts] = useStoredState("sim.maxPayouts", 4);
+  const [fundedLockProfit, setFundedLockProfit] = useStoredState("sim.fundedLockProfit", 0);
+  const [seed, setSeed] = useStoredState("sim.seed", 1);
 
   const winRate = Math.min(0.99, Math.max(0.01, winRatePct / 100));
   const payoff = resolvePayoff(edgeMode, profitFactor, winRate, winAmount, lossAmount);
@@ -173,11 +176,12 @@ export function Simulator({ trackerRatio }: SimulatorProps) {
       traderSplitPct,
       parallelAccounts: Math.min(500, Math.max(1, Math.floor(parallelAccounts))),
       fundedLockProfit,
+      maxPayouts: Math.max(0, Math.floor(maxPayouts)),
     }),
     [
       runs, trades, winRate, edgeMode, profitFactor, winAmount, startEquity, lossAmount,
       drawdownType, drawdownSize, lockAtStart, profitTarget, seed,
-      evalCost, activationCost, fundedTrades, payoutAmount, payoutThreshold, traderSplitPct, parallelAccounts, fundedLockProfit,
+      evalCost, activationCost, fundedTrades, payoutAmount, payoutThreshold, traderSplitPct, parallelAccounts, fundedLockProfit, maxPayouts,
     ]
   );
 
@@ -343,6 +347,12 @@ export function Simulator({ trackerRatio }: SimulatorProps) {
             step={100}
             disabled={drawdownType !== "eod" && drawdownType !== "intraday"}
             hint="Beneficio al que el suelo trailing deja de subir (Apex: 2600; el suelo queda en ese valor − DD). 0 = igual que la prueba"
+          />
+          <NumberField
+            label="Máx. cobros por cuenta"
+            value={maxPayouts}
+            onChange={setMaxPayouts}
+            hint="Al llegar a este número de cobros la cuenta se cierra. 0 = sin límite"
           />
           <NumberField
             label="Cuentas en paralelo"
@@ -643,6 +653,8 @@ export function Simulator({ trackerRatio }: SimulatorProps) {
             </tbody>
           </table>
         </div>
+
+        <ReportBacktest params={params} />
       </div>
     </div>
   );

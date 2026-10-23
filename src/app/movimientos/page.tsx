@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
 import { loadAllAccounts } from "@/lib/data";
 import { TransactionForm } from "@/components/TransactionForm";
-import { TransactionRow } from "@/components/TransactionRow";
+import { TransactionDeleteButton } from "@/components/TransactionDeleteButton";
+import { TransactionsTable } from "@/components/TransactionsTable";
+import { accountName, accountOptionLabel, formatCurrency } from "@/lib/format";
 import Link from "next/link";
 
 export default async function MovimientosPage(props: PageProps<"/movimientos">) {
@@ -24,7 +26,11 @@ export default async function MovimientosPage(props: PageProps<"/movimientos">) 
   const accountOptions = accounts
     .slice()
     .sort((a, b) => a.firm.localeCompare(b.firm))
-    .map((a) => ({ id: a.id, label: `${a.firm} · ${a.size}` }));
+    .map((a) => ({
+      id: a.id,
+      label: accountOptionLabel(a),
+      canPayout: a.stage === "FUNDED" && a.status === "ACTIVE",
+    }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,41 +74,29 @@ export default async function MovimientosPage(props: PageProps<"/movimientos">) 
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-border text-xs uppercase text-muted">
-            <tr>
-              <th className="px-4 py-3">Cuenta</th>
-              <th className="px-4 py-3">Fecha</th>
-              <th className="px-4 py-3">Tipo</th>
-              <th className="px-4 py-3">Categoría</th>
-              <th className="px-4 py-3">Monto</th>
-              <th className="px-4 py-3">Nota</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((tx) => (
-              <TransactionRow
-                key={tx.id}
-                tx={{ ...tx, accountFirm: tx.account.firm }}
-                showAccount
-              />
-            ))}
-            {transactions.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted">
-                  Sin movimientos.{" "}
-                  <Link href="/cuentas" className="text-accent hover:underline">
-                    Crea una cuenta primero
-                  </Link>
-                  .
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TransactionsTable
+        showAccount
+        rows={transactions.map((tx) => ({
+          id: tx.id,
+          accountName: accountName(tx.account),
+          accountDetail: `${tx.account.label ? `${tx.account.firm} · ` : ""}${formatCurrency(tx.account.size)}`,
+          type: tx.type,
+          category: tx.category,
+          amount: tx.amount,
+          date: tx.date,
+          note: tx.note,
+          actions: <TransactionDeleteButton id={tx.id} accountId={tx.accountId} />,
+        }))}
+        emptyMessage={
+          <>
+            Sin movimientos.{" "}
+            <Link href="/cuentas" className="text-accent hover:underline">
+              Crea una cuenta primero
+            </Link>
+            .
+          </>
+        }
+      />
     </div>
   );
 }

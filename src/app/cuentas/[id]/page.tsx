@@ -4,7 +4,8 @@ import { loadAccountById } from "@/lib/data";
 import { StageBadge, StatusBadge } from "@/components/Badges";
 import { AccountRowActions } from "@/components/AccountRowActions";
 import { TransactionForm } from "@/components/TransactionForm";
-import { TransactionRow } from "@/components/TransactionRow";
+import { TransactionDeleteButton } from "@/components/TransactionDeleteButton";
+import { TransactionsTable } from "@/components/TransactionsTable";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 export default async function AccountDetailPage(props: PageProps<"/cuentas/[id]">) {
@@ -32,7 +33,12 @@ export default async function AccountDetailPage(props: PageProps<"/cuentas/[id]"
           <StageBadge stage={account.stage} />
           <StatusBadge status={account.status} />
         </div>
-        {account.label && <p className="text-sm text-muted">{account.label}</p>}
+        {account.label && (
+          <p className="text-sm text-muted">
+            {account.label}
+            {account.evaluationLabel && ` · antes: ${account.evaluationLabel}`}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -63,32 +69,20 @@ export default async function AccountDetailPage(props: PageProps<"/cuentas/[id]"
         <TransactionForm accountId={account.id} />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-border text-xs uppercase text-muted">
-            <tr>
-              <th className="px-4 py-3">Fecha</th>
-              <th className="px-4 py-3">Tipo</th>
-              <th className="px-4 py-3">Categoría</th>
-              <th className="px-4 py-3">Monto</th>
-              <th className="px-4 py-3">Nota</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {account.transactions.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} />
-            ))}
-            {account.transactions.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-muted">
-                  Sin movimientos todavía
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TransactionsTable
+        rows={account.transactions.map((tx) => ({
+          id: tx.id,
+          accountName: account.label || account.firm,
+          accountDetail: "",
+          type: tx.type,
+          category: tx.category,
+          amount: tx.amount,
+          date: tx.date,
+          note: tx.note,
+          actions: <TransactionDeleteButton id={tx.id} accountId={tx.accountId} />,
+        }))}
+        emptyMessage="Sin movimientos todavía"
+      />
     </div>
   );
 }

@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { loadAllAccounts, loadAllTransactions } from "@/lib/data";
 import { AccountForm } from "@/components/AccountForm";
 import { AccountRowActions } from "@/components/AccountRowActions";
-import { StageBadge, StatusBadge } from "@/components/Badges";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { AccountsTable, type AccountRow } from "@/components/AccountsTable";
 
 export default async function AccountsPage() {
   const [accounts, transactions] = await Promise.all([
@@ -19,9 +17,22 @@ export default async function AccountsPage() {
     totalsByAccount.set(t.accountId, entry);
   }
 
-  const sorted = [...accounts].sort(
-    (a, b) => b.purchasedAt.getTime() - a.purchasedAt.getTime()
-  );
+  const rows: AccountRow[] = accounts.map((account) => {
+    const totals = totalsByAccount.get(account.id) ?? { expense: 0, payout: 0 };
+    return {
+      id: account.id,
+      firm: account.firm,
+      label: account.label ?? null,
+      evaluationLabel: account.evaluationLabel ?? null,
+      size: account.size,
+      stage: account.stage,
+      status: account.status,
+      purchasedAt: account.purchasedAt,
+      expense: totals.expense,
+      payout: totals.payout,
+      actions: <AccountRowActions account={account} />,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,56 +46,7 @@ export default async function AccountsPage() {
         <AccountForm />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="border-b border-border text-xs uppercase text-muted">
-            <tr>
-              <th className="px-4 py-3">Firma</th>
-              <th className="px-4 py-3">Tamaño</th>
-              <th className="px-4 py-3">Etapa</th>
-              <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3">Comprada</th>
-              <th className="px-4 py-3">Gasto</th>
-              <th className="px-4 py-3">Retiros</th>
-              <th className="px-4 py-3">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((account) => {
-              const totals = totalsByAccount.get(account.id) ?? { expense: 0, payout: 0 };
-              return (
-                <tr key={account.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3">
-                    <Link href={`/cuentas/${account.id}`} className="font-medium hover:text-accent">
-                      {account.firm}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">{formatCurrency(account.size)}</td>
-                  <td className="px-4 py-3">
-                    <StageBadge stage={account.stage} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={account.status} />
-                  </td>
-                  <td className="px-4 py-3 text-muted">{formatDate(account.purchasedAt)}</td>
-                  <td className="px-4 py-3 text-negative">{formatCurrency(totals.expense)}</td>
-                  <td className="px-4 py-3 text-positive">{formatCurrency(totals.payout)}</td>
-                  <td className="px-4 py-3">
-                    <AccountRowActions account={account} />
-                  </td>
-                </tr>
-              );
-            })}
-            {sorted.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-muted">
-                  Aún no tienes cuentas registradas
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <AccountsTable rows={rows} />
     </div>
   );
 }

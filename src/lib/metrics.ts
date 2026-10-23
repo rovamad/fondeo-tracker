@@ -5,6 +5,8 @@ export type TransactionType = "EXPENSE" | "PAYOUT";
 export interface MetricAccount {
   id: string;
   firm: string;
+  label?: string | null;
+  evaluationLabel?: string | null;
   size: number;
   stage: AccountStage;
   status: AccountStatus;
@@ -143,7 +145,9 @@ export function computeDashboardMetrics(
     .map((a) => (a.fundedAt!.getTime() - a.purchasedAt.getTime()) / (1000 * 60 * 60 * 24));
   const avgDaysToFund = daysToFund.length > 0 ? average(daysToFund) : null;
 
-  const activeAccountsNow = allAccounts.filter((a) => a.status === "ACTIVE").length;
+  const activeAccountsNow = allAccounts.filter(
+    (a) => a.stage === "EVALUATION" && a.status === "ACTIVE"
+  ).length;
 
   const netByDay = new Map<string, number>();
   for (const t of transactions) {

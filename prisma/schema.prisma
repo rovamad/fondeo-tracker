@@ -36,7 +36,8 @@ model Account {
   firm         String
   size         Float
   label        String?
-  stage        AccountStage  @default(EVALUATION)
+  evaluationLabel String?
+  stage       AccountStage  @default(EVALUATION)
   status       AccountStatus @default(ACTIVE)
   purchasedAt  DateTime      @default(now())
   fundedAt     DateTime?

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { parseDateInput, todayDate } from "@/lib/format";
 import type {
   AccountStage,
   AccountStatus,
@@ -36,7 +37,7 @@ export async function createAccount(formData: FormData) {
   const label = optionalStr(formData, "label");
   const notes = optionalStr(formData, "notes");
   const purchasedAtRaw = optionalStr(formData, "purchasedAt");
-  const purchasedAt = purchasedAtRaw ? new Date(purchasedAtRaw) : new Date();
+  const purchasedAt = parseDateInput(purchasedAtRaw);
 
   await prisma.account.create({
     data: {
@@ -68,11 +69,56 @@ export async function updateAccountStage(accountId: string, stage: AccountStage)
     where: { id: accountId },
     data: {
       stage,
-      fundedAt: stage === "FUNDED" ? new Date() : undefined,
+      fundedAt: stage === "FUNDED" ? todayDate() : undefined,
     },
   });
   revalidatePath("/cuentas");
   revalidatePath(`/cuentas/${accountId}`);
+  revalidatePath("/");
+}
+
+export async function promoteToLive(accountId: string, formData: FormData) {
+  const costRaw = optionalStr(formData, "activationCost");
+  const cost = costRaw ? Number(costRaw) : 0;
+  if (Number.isNaN(cost) || cost < 0) {
+    throw new Error('El campo "activationCost" debe ser un número positivo');
+  }
+  const newLabel = optionalStr(formData, "liveLabel");
+  const now = todayDate();
+
+  const current = await prisma.account.findUniqueOrThrow({
+    where: { id: accountId },
+    select: { label: true },
+  });
+  const renamed = newLabel !== undefined && newLabel !== current.label;
+
+  await prisma.$transaction([
+    prisma.account.update({
+      where: { id: accountId },
+      data: {
+        stage: "FUNDED",
+        fundedAt: now,
+        ...(renamed ? { label: newLabel, evaluationLabel: current.label } : {}),
+      },
+    }),
+    ...(cost > 0
+      ? [
+          prisma.transaction.create({
+            data: {
+              accountId,
+              type: "EXPENSE",
+              category: "ACTIVATION",
+              amount: cost,
+              date: now,
+            },
+          }),
+        ]
+      : []),
+  ]);
+
+  revalidatePath("/cuentas");
+  revalidatePath(`/cuentas/${accountId}`);
+  revalidatePath("/movimientos");
   revalidatePath("/");
 }
 
@@ -81,7 +127,7 @@ export async function updateAccountStatus(accountId: string, status: AccountStat
     where: { id: accountId },
     data: {
       status,
-      failedAt: status === "FAILED" ? new Date() : undefined,
+      failedAt: status === "FAILED" ? todayDate() : undefined,
     },
   });
   revalidatePath("/cuentas");
@@ -101,7 +147,7 @@ export async function createTransaction(formData: FormData) {
   const type = str(formData, "type") as "EXPENSE" | "PAYOUT";
   const amount = num(formData, "amount");
   const dateRaw = optionalStr(formData, "date");
-  const date = dateRaw ? new Date(dateRaw) : new Date();
+  const date = parseDateInput(dateRaw);
   const note = optionalStr(formData, "note");
   const categoryRaw = optionalStr(formData, "category");
   const category =
